@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BTX - 경로 검색</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: #F7F9FC;
+      max-width: 500px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* ── Screen 1: Search ── */
+    #screen-search {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 64px 24px 40px;
+      min-height: 100vh;
+    }
+
+    .search-logo {
+      margin-bottom: 52px;
+    }
+    .search-logo img {
+      height: 40px;
+      display: block;
+    }
+
+    .search-card {
+      width: 100%;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(31, 58, 95, 0.10);
+      padding: 0 20px;
+      margin-bottom: 16px;
+    }
+
+    .search-row {
+      display: flex;
+      align-items: stretch;
+      padding: 8px 0;
+    }
+
+    .dot-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 0;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+    .s-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .s-dot.dep { background: #1F3A5F; }
+    .s-dot.arr { background: #FF5B1B; }
+    .s-connector {
+      flex: 1;
+      width: 2px;
+      background: #DDE5EF;
+      margin: 6px 0;
+      border-radius: 1px;
+    }
+
+    .fields-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .field-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 14px 0;
+    }
+    .field-item + .field-item {
+      border-top: 1px solid #EEF2F7;
+    }
+    .field-label {
+      font-size: 11px;
+      color: #AAB4C4;
+      font-weight: 500;
+      margin-bottom: 3px;
+      letter-spacing: 0.3px;
+    }
+    .field-value {
+      font-size: 16px;
+      color: #1F3A5F;
+      font-weight: 700;
+    }
+
+    .btn-search {
+      width: 100%;
+      padding: 17px;
+      background: #FF5B1B;
+      color: white;
+      border: none;
+      border-radius: 13px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: -0.3px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-search:active {
+      opacity: 0.9;
+      transform: scale(0.99);
+    }
+
+    .demo-notice {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #AAB4C4;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ── Screen 2: Results ── */
+    #screen-results {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .results-header {
+      background: linear-gradient(135deg, #1F3A5F 0%, #2a4f7c 100%);
+      padding: 20px 20px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-back {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .btn-back:active { background: rgba(255,255,255,0.25); }
+    .header-route-info { flex: 1; }
+    .header-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      margin-bottom: 3px;
+    }
+    .header-route-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.3px;
+    }
+
+    /* Sort tabs */
+    .sort-tabs {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid #EEF2F7;
+      position: sticky;
+      top: 80px;
+      z-index: 99;
+    }
+    .sort-tab {
+      flex: 1;
+      padding: 13px 4px;
+      text-align: center;
+      font-size: 13px;
+      color: #AAB4C4;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+      transition: all 0.2s;
+      letter-spacing: -0.2px;
+    }
+    .sort-tab.active {
+      color: #1F3A5F;
+      border-bottom-color: #1F3A5F;
+      font-weight: 700;
+    }
+
+    /* Route list */
+    .routes-list {
+      padding: 14px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Route card */
+    .route-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(31, 58, 95, 0.07);
+      overflow: hidden;
+    }
+    .route-card-header {
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #F0F4FA;
+    }
+    .last-train-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #EBF3FD;
+      color: #4A90E2;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+    .last-train-badge.late-night {
+      background: #FFF1EB;
+      color: #FF5B1B;
+    }
+    .route-summary { text-align: right; }
+    .route-time {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1F3A5F;
+      letter-spacing: -0.5px;
+    }
+    .route-cost {
+      font-size: 13px;
+      color: #8899BB;
+      margin-top: 1px;
+    }
+
+    /* Steps */
+    .route-steps {
+      padding: 14px 16px 16px;
+    }
+    .step {
+      display: flex;
+      gap: 10px;
+      position: relative;
+    }
+    .step:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 13px;
+      top: 28px;
+      bottom: 0;
+      width: 2px;
+      background: #EEF2F7;
+    }
+    .step-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .step-icon.taxi  { background: #FFF0EB; }
+    .step-icon.walk  { background: #F5F6FA; }
+    .step-icon.subway { background: #EBF3FD; }
+    .step-icon.bus   { background: #EBF3FD; }
+
+    .step-content {
+      flex: 1;
+      padding-bottom: 14px;
+    }
+    .step:last-child .step-content { padding-bottom: 0; }
+
+    .step-line-label {
+      font-size: 11px;
+      color: #AAB4C4;
+      font-weight: 600;
+      margin-bottom: 2px;
+      letter-spacing: 0.2px;
+    }
+    .step-route-text {
+      font-size: 13px;
+      color: #1F3A5F;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+    .step-meta {
+      font-size: 12px;
+      color: #AAB4C4;
+      margin-top: 3px;
+    }
+    /* walk step is more subtle */
+    .step.is-walk .step-route-text {
+      font-size: 12px;
+      font-weight: 400;
+      color: #AAB4C4;
+    }
+    .step.is-walk .step-content {
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Screen 1: Search ── -->
+<div id="screen-search">
+  <div class="search-logo">
+    <img src="images/logo.png" alt="BTX">
+  </div>
+
+  <div class="search-card">
+    <div class="search-row">
+      <div class="dot-col">
+        <div class="s-dot dep"></div>
+        <div class="s-connector"></div>
+        <div class="s-dot arr"></div>
+      </div>
+      <div class="fields-col">
+        <div class="field-item">
+          <div class="field-label">출발지</div>
+          <div class="field-value">연세대학교 정문</div>
+        </div>
+        <div class="field-item">
+          <div class="field-label">도착지</div>
+          <div class="field-value">수원역</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-search" onclick="showResults()">경로 확인하기</button>
+  <p class="demo-notice">※ 예시 데모 페이지입니다<br>실제 서비스에서는 출발지·도착지를 자유롭게 입력할 수 있습니다</p>
+</div>
+
+<!-- ── Screen 2: Results ── -->
+<div id="screen-results">
+  <div class="results-header">
+    <div class="header-nav">
+      <button class="btn-back" onclick="showSearch()">←</button>
+      <div class="header-route-info">
+        <div class="header-label">출발지 → 도착지</div>
+        <div class="header-route-text">연세대학교 정문 → 수원역</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sort-tabs">
+    <div class="sort-tab active" data-sort="time"   onclick="setSort('time')">최단시간순</div>
+    <div class="sort-tab"        data-sort="lastTrain" onclick="setSort('lastTrain')">막차늦은순</div>
+    <div class="sort-tab"        data-sort="cost"   onclick="setSort('cost')">저렴한순</div>
+  </div>
+
+  <div class="routes-list" id="routes-list"></div>
+</div>
+
+<script>
+/* ── Route data ── */
+const routes = [
+  {
+    id: 1,
+    lastTrain: "22:02",
+    lastTrainSort: 22 * 60 + 2,
+    totalMinutes: 57,
+    totalCost: 11400,
+    steps: [
+      { type: 'taxi',   from: '연세대학교 정문', to: '서울역',   duration: 16, cost: 8700 },
+      { type: 'walk',   duration: 6,  label: '도보' },
+      { type: 'subway', from: '서울역',         to: '수원역',   line: '일반열차',    duration: 35, cost: 2700 }
+    ]
+  },
+  {
+    id: 2,
+    lastTrain: "19:31",
+    lastTrainSort: 19 * 60 + 31,
+    totalMinutes: 68,
+    totalCost: 2150,
+    steps: [
+      { type: 'walk',   duration: 11, label: '도보' },
+      { type: 'subway', from: '신촌역',   to: '신도림역', line: '수도권 2호선', duration: 13, cost: 1550 },
+      { type: 'walk',   duration: 7,  label: '도보 & 환승 대기' },
+      { type: 'subway', from: '신도림역', to: '수원역',   line: '수도권 1호선', duration: 37, cost: 600 }
+    ]
+  },
+  {
+    id: 3,
+    lastTrain: "23:04",
+    lastTrainSort: 23 * 60 + 4,
+    totalMinutes: 74,
+    totalCost: 2150,
+    steps: [
+      { type: 'walk',   duration: 11, label: '도보' },
+      { type: 'subway', from: '신촌역',   to: '신도림역', line: '수도권 2호선', duration: 13, cost: 1550 },
+      { type: 'walk',   duration: 7,  label: '도보 & 환승 대기' },
+      { type: 'subway', from: '신도림역', to: '수원역',   line: '수도권 1호선', duration: 43, cost: 600 }
+    ]
+  },
+  {
+    id: 4,
+    lastTrain: "12:27",
+    lastTrainSort: 12 * 60 + 27,
+    totalMinutes: 73,
+    totalCost: 14500,
+    steps: [
+      { type: 'taxi',   from: '연세대학교 정문', to: '삼각지역', duration: 14, cost: 11100 },
+      { type: 'subway', from: '삼각지역',       to: '사당역',   line: '수도권 4호선', duration: 12, cost: 1550 },
+      { type: 'walk',   duration: 6,  label: '도보' },
+      { type: 'bus',    from: '사당역 4번출구B', to: '수원역',   line: '수원 7770번', duration: 41, cost: 1850 }
+    ]
+  },
+  {
+    id: 5,
+    lastTrain: "01:18",
+    lastTrainSort: 25 * 60 + 18,   /* 다음날 새벽 → 가장 늦음 */
+    totalMinutes: 96,
+    totalCost: 14650,
+    steps: [
+      { type: 'taxi', from: '연세대학교 정문',  to: '전쟁기념관',      duration: 14, cost: 11100 },
+      { type: 'bus',  from: '전쟁기념관',       to: '강남역 9번출구',  line: '간선 N75번',  duration: 20, cost: 1500 },
+      { type: 'walk', duration: 6, label: '도보' },
+      { type: 'bus',  from: '강남역 나라빌딩앞', to: '수원역',          line: '수원 3000번', duration: 56, cost: 2050 }
+    ]
+  }
+];
+
+/* ── Helpers ── */
+const ICON = { taxi: '🚕', walk: '🚶', subway: '🚇', bus: '🚌' };
+
+function fmtCost(n) {
+  return n.toLocaleString('ko-KR') + '원';
+}
+
+/* ── Render a single step ── */
+function renderStep(step, isLast) {
+  const isWalk = step.type === 'walk';
+
+  let lineLabel = '';
+  if (step.type === 'taxi')   lineLabel = '택시';
+  else if (step.type === 'subway') lineLabel = step.line;
+  else if (step.type === 'bus')    lineLabel = step.line;
+
+  const contentHtml = isWalk
+    ? `<div class="step-route-text">${step.label || '도보'} · ${step.duration}분</div>`
+    : `
+        <div class="step-line-label">${lineLabel}</div>
+        <div class="step-route-text">${step.from} → ${step.to}</div>
+        <div class="step-meta">${step.duration}분 · ${fmtCost(step.cost)}</div>
+      `;
+
+  return `
+    <div class="step${isWalk ? ' is-walk' : ''}">
+      <div class="step-icon ${step.type}">${ICON[step.type]}</div>
+      <div class="step-content">${contentHtml}</div>
+    </div>
+  `;
+}
+
+/* ── Render a route card ── */
+function renderRoute(route) {
+  const isLate = route.lastTrain === '01:18';
+  const stepsHtml = route.steps
+    .map((s, i) => renderStep(s, i === route.steps.length - 1))
+    .join('');
+
+  return `
+    <div class="route-card">
+      <div class="route-card-header">
+        <div class="last-train-badge${isLate ? ' late-night' : ''}">
+          🕐 막차 ~${route.lastTrain}
+        </div>
+        <div class="route-summary">
+          <div class="route-time">총 ${route.totalMinutes}분</div>
+          <div class="route-cost">${fmtCost(route.totalCost)}</div>
+        </div>
+      </div>
+      <div class="route-steps">${stepsHtml}</div>
+    </div>
+  `;
+}
+
+/* ── Sort & render ── */
+let currentSort = 'time';
+
+function getSorted(key) {
+  return [...routes].sort((a, b) => {
+    if (key === 'time')      return a.totalMinutes  - b.totalMinutes;
+    if (key === 'lastTrain') return b.lastTrainSort - a.lastTrainSort;
+    if (key === 'cost')      return a.totalCost     - b.totalCost;
+  });
+}
+
+function renderRoutes() {
+  document.getElementById('routes-list').innerHTML =
+    getSorted(currentSort).map(renderRoute).join('');
+}
+
+function setSort(key) {
+  currentSort = key;
+  document.querySelectorAll('.sort-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.sort === key);
+  });
+  renderRoutes();
+}
+
+/* ── Screen switching ── */
+function showResults() {
+  document.getElementById('screen-search').style.display  = 'none';
+  const el = document.getElementById('screen-results');
+  el.style.display = 'flex';
+  renderRoutes();
+  window.scrollTo(0, 0);
+}
+
+function showSearch() {
+  document.getElementById('screen-results').style.display = 'none';
+  document.getElementById('screen-search').style.display  = 'flex';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
