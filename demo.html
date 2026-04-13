@@ -400,7 +400,7 @@ const routes = [
       { type: 'walk',   duration: 11, label: '도보' },
       { type: 'subway', from: '신촌역',   to: '신도림역', line: '수도권 2호선', duration: 13, cost: 1550 },
       { type: 'walk',   duration: 7,  label: '도보 & 환승 대기' },
-      { type: 'subway', from: '신도림역', to: '수원역',   line: '수도권 1호선', duration: 37, cost: 600 }
+      { type: 'subway', from: '신도림역', to: '수원역',   line: '수도권 1호선 <span style="color:#E53935;font-weight:700;">급행</span>', duration: 37, cost: 600 }
     ]
   },
   {
@@ -418,8 +418,8 @@ const routes = [
   },
   {
     id: 4,
-    lastTrain: "12:27",
-    lastTrainSort: 12 * 60 + 27,
+    lastTrain: "00:27",
+    lastTrainSort: 24 * 60 + 27,   /* 다음날 자정 이후 */
     totalMinutes: 73,
     totalCost: 14500,
     steps: [
