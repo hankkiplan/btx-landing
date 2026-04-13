@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>BTX — 택시 + 대중교통 조합 앱</title>
+  <style>
+    /* ── 애니메이션 기본 상태 ── */
+    .ani {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .ani.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .ani-left {
+      opacity: 0;
+      transform: translateX(-28px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .ani-left.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .d1 { transition-delay: 0.1s; }
+    .d2 { transition-delay: 0.22s; }
+    .d3 { transition-delay: 0.34s; }
+
+    /* ── 히어로 등장 ── */
+    .hero-tag  { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; transition-delay: 0.1s; }
+    .hero-h1   { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; transition-delay: 0.25s; }
+    .hero-sub  { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; transition-delay: 0.4s; }
+    .hero-btn  { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease, transform 0.5s ease; transition-delay: 0.55s; }
+    .hero-loaded .hero-tag,
+    .hero-loaded .hero-h1,
+    .hero-loaded .hero-sub,
+    .hero-loaded .hero-btn { opacity: 1; transform: none; }
+
+    /* ── CTA 맥박 ── */
+    @keyframes pulse-btn {
+      0%   { box-shadow: 0 0 0 0 rgba(255, 91, 27, 0.45); }
+      70%  { box-shadow: 0 0 0 14px rgba(255, 91, 27, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 91, 27, 0); }
+    }
+    .pulse { animation: pulse-btn 2.2s infinite; }
+
+    /* ── 택시 아이콘 흔들림 ── */
+    @keyframes taxi-wobble {
+      0%, 100% { transform: rotate(-3deg); }
+      50%       { transform: rotate(3deg); }
+    }
+    .taxi-icon { display: inline-block; animation: taxi-wobble 2s ease-in-out infinite; }
+
+    /* ── 경로 단계 바 ── */
+    .step-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.15);
+      overflow: hidden;
+    }
+    .step-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: #4A90E2;
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: transform 0.8s ease;
+    }
+    .step-bar-fill.filled { transform: scaleX(1); }
+
+    /* ── 핵심 기능 이미지 플레이스홀더 ── */
+    .feature-img {
+      background: linear-gradient(135deg, #e4edf8 0%, #d4e4f5 100%);
+      border-radius: 14px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .feature-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px;
+    }
+
+    /* ── FAQ 아코디언 ── */
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.25s ease;
+      padding: 0 20px;
+    }
+    .faq-answer.open {
+      max-height: 180px;
+      padding: 12px 20px 18px;
+    }
+    .faq-icon {
+      font-size: 18px;
+      color: #4A90E2;
+      transition: transform 0.3s ease;
+      font-style: normal;
+    }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-item { cursor: pointer; }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background: #F7F9FC; font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+
+<div style="max-width: 500px; margin: 0 auto; background: #fff;">
+
+  <!-- ── 상단 헤더 ── -->
+  <header style="background: #fff; padding: 14px 20px; border-bottom: 1px solid #eef2f7; display: flex; align-items: center; gap: 8px;">
+    <span style="font-size: 20px;">🚖</span>
+    <span style="font-size: 16px; font-weight: 800; color: #1F3A5F; letter-spacing: -0.5px;">BTX</span>
+    <span style="font-size: 12px; color: #888; margin-left: 2px;">대중교통 × 택시 조합 앱</span>
+  </header>
+
+  <!-- ── ① 문제 공감 ── -->
+  <section id="hero-section" style="background: linear-gradient(160deg, #1F3A5F 0%, #142d4f 100%); padding: 52px 24px 44px; text-align: center;">
+    <p class="hero-tag" style="font-size: 12px; font-weight: 700; color: #4A90E2; letter-spacing: 2px; margin: 0 0 22px;">혹시 이런 경험 있으신가요?</p>
+    <div class="hero-h1" style="font-size: 18px; font-weight: 700; color: #fff; line-height: 1.85; margin: 0 0 24px; text-align: left;">
+      <p style="margin: 0 0 16px; padding: 18px 20px; background: rgba(255,255,255,0.06); border-radius: 12px; border-left: 3px solid #4A90E2;">
+        약속에 늦었는데<br>
+        대중교통 타기에는 너무 늦고<br>
+        <span style="color: #4A90E2;">택시는 너무 비쌌던 적 있나요?</span>
+      </p>
+      <p style="margin: 0 0 16px; padding: 18px 20px; background: rgba(255,255,255,0.06); border-radius: 12px; border-left: 3px solid rgba(74,144,226,0.6);">
+        술자리에서 조금 더 있고 싶은데<br>
+        <span style="color: rgba(74,144,226,0.85);">막차 때문에 혼자 먼저 나가야 했던 적 있나요?</span>
+      </p>
+      <p style="margin: 0 0 0; padding: 18px 20px; background: rgba(255,255,255,0.06); border-radius: 12px; border-left: 3px solid rgba(74,144,226,0.4);">
+        택시를 불러야 하는데<br>앱 켜고, 위치 찍고, 기다리는 게<br>
+        <span style="color: rgba(74,144,226,0.7);">귀찮았던 적 있나요?</span>
+      </p>
+    </div>
+
+    <!-- 핵심 한 줄 -->
+    <div class="hero-sub" style="background: #4A90E2; border-radius: 12px; padding: 18px 20px; margin: 0 0 28px;">
+      <p style="margin: 0; font-size: 17px; font-weight: 800; color: #fff; line-height: 1.5;">
+        이 모든 고민,<br>이제 한 번에 해결됩니다. ✓
+      </p>
+    </div>
+
+    <a href="#cta" class="hero-btn pulse" style="display: block; background: #FF5B1B; color: #fff; font-size: 17px; font-weight: 700; padding: 18px 20px; border-radius: 12px; text-decoration: none; letter-spacing: -0.3px;">
+      실제 서비스 예시 경험해보기 →
+    </a>
+  </section>
+
+  <!-- ── ② 해결책 ── -->
+  <section style="background: #fff; padding: 52px 24px; text-align: center;">
+    <p class="ani" style="font-size: 12px; font-weight: 700; color: #4A90E2; letter-spacing: 2px; margin: 0 0 14px;">BTX의 솔루션</p>
+    <h2 class="ani d1" style="font-size: 23px; font-weight: 800; color: #1a1a1a; line-height: 1.5; margin: 0 0 18px;">
+      택시 + 대중교통을 자동으로 조합해<br>
+      <span style="color: #4A90E2;">가장 빠르고 효율적인 이동</span>을<br>추천합니다.
+    </h2>
+    <p class="ani d2" style="font-size: 15px; color: #666; line-height: 1.75; margin: 0 0 36px;">
+      고민하지 마세요. 앱이 알아서 찾아드립니다.
+    </p>
+
+    <!-- 이동 경로 시각화 -->
+    <div class="ani d2" style="background: #F7F9FC; border-radius: 16px; padding: 24px 20px;">
+      <p style="font-size: 12px; font-weight: 700; color: #888; margin: 0 0 20px; letter-spacing: 1px;">예시 경로 — 자택 → 인천공항</p>
+      <div style="display: flex; align-items: center; gap: 0; margin-bottom: 8px;">
+        <!-- 출발 -->
+        <div style="text-align: center; min-width: 64px;">
+          <div style="width: 44px; height: 44px; background: #1F3A5F; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 20px;">📍</div>
+          <p style="font-size: 11px; font-weight: 700; color: #1F3A5F; margin: 0;">자택</p>
+        </div>
+        <!-- 택시 구간 -->
+        <div style="flex: 1; padding: 0 6px;">
+          <div style="background: #1F3A5F; border-radius: 4px; padding: 5px 8px; text-align: center; margin-bottom: 4px;">
+            <span style="font-size: 11px; font-weight: 700; color: #fff;">🚖 택시 8분</span>
+          </div>
+          <div class="step-bar" style="background: #dde5ef;"><div class="step-bar-fill" id="bar1"></div></div>
+        </div>
+        <!-- 환승 지점 -->
+        <div style="text-align: center; min-width: 64px;">
+          <div style="width: 44px; height: 44px; background: #4A90E2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 20px;">🔄</div>
+          <p style="font-size: 11px; font-weight: 700; color: #4A90E2; margin: 0;">공항철도</p>
+        </div>
+        <!-- 지하철 구간 -->
+        <div style="flex: 1; padding: 0 6px;">
+          <div style="background: #daeaf8; border-radius: 4px; padding: 5px 8px; text-align: center; margin-bottom: 4px;">
+            <span style="font-size: 11px; font-weight: 700; color: #4A90E2;">🚇 지하철 43분</span>
+          </div>
+          <div class="step-bar" style="background: #dde5ef;"><div class="step-bar-fill" id="bar2"></div></div>
+        </div>
+        <!-- 도착 -->
+        <div style="text-align: center; min-width: 64px;">
+          <div style="width: 44px; height: 44px; background: #1F3A5F; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 20px;">✈️</div>
+          <p style="font-size: 11px; font-weight: 700; color: #1F3A5F; margin: 0;">인천공항</p>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 24px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+        <div style="text-align: center;">
+          <p style="font-size: 20px; font-weight: 800; color: #1F3A5F; margin: 0;">51분</p>
+          <p style="font-size: 11px; color: #888; margin: 4px 0 0;">총 소요시간</p>
+        </div>
+        <div style="width: 1px; background: #e2e8f0;"></div>
+        <div style="text-align: center;">
+          <p style="font-size: 20px; font-weight: 800; color: #1F3A5F; margin: 0;">₩12,400</p>
+          <p style="font-size: 11px; color: #888; margin: 4px 0 0;">예상 비용</p>
+        </div>
+        <div style="width: 1px; background: #e2e8f0;"></div>
+        <div style="text-align: center;">
+          <p style="font-size: 20px; font-weight: 800; color: #4A90E2; margin: 0;">↓ 63%</p>
+          <p style="font-size: 11px; color: #888; margin: 4px 0 0;">택시 대비 절약</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ③ 핵심 기능 ── -->
+  <section style="background: #F7F9FC; padding: 52px 24px;">
+    <p style="font-size: 12px; font-weight: 700; color: #4A90E2; letter-spacing: 2px; text-align: center; margin: 0 0 14px;">핵심 기능</p>
+    <h2 style="font-size: 22px; font-weight: 800; color: #1a1a1a; text-align: center; line-height: 1.45; margin: 0 0 36px;">
+      딱 4가지만 기억하세요
+    </h2>
+
+    <!-- 기능 1 -->
+    <div class="ani d1" style="background: #fff; border-radius: 16px; padding: 26px; margin-bottom: 16px; box-shadow: 0 2px 16px rgba(31,58,95,0.07);">
+      <div class="feature-img">
+        <img src="images/feature1.png" alt="혼합 경로 자동 추천"
+          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'text-align:center; padding:16px;\'><span style=\'font-size:56px;\'>🗺️</span><p style=\'margin:12px 0 0; font-size:13px; color:#8899bb;\'>여기에 혼합 경로 추천 화면 이미지를 넣어주세요</p></div>';">
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <span style="background: #1F3A5F; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px;">01</span>
+        <h3 style="font-size: 17px; font-weight: 800; color: #1F3A5F; margin: 0;">혼합 경로 자동 추천</h3>
+      </div>
+      <p style="font-size: 14px; color: #555; line-height: 1.75; margin: 0;">
+        출발지와 목적지를 입력하면 택시와 대중교통을 최적으로 조합한 경로를 자동으로 제시합니다.<br>
+        <strong>고민 없이 최적 경로 제시.</strong>
+      </p>
+    </div>
+
+    <!-- 기능 2 -->
+    <div class="ani d2" style="background: #fff; border-radius: 16px; padding: 26px; margin-bottom: 16px; box-shadow: 0 2px 16px rgba(31,58,95,0.07);">
+      <div class="feature-img">
+        <img src="images/feature2.png" alt="시간 vs 비용 선택"
+          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'text-align:center; padding:16px;\'><span style=\'font-size:56px;\'>⚖️</span><p style=\'margin:12px 0 0; font-size:13px; color:#8899bb;\'>여기에 시간/비용 선택 화면 이미지를 넣어주세요</p></div>';">
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <span style="background: #4A90E2; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px;">02</span>
+        <h3 style="font-size: 17px; font-weight: 800; color: #4A90E2; margin: 0;">시간 vs 비용 선택</h3>
+      </div>
+      <p style="font-size: 14px; color: #555; line-height: 1.75; margin: 0;">
+        빠른 경로, 저렴한 경로, 균형 잡힌 경로 중에서 <strong>지금 내 상황에 맞는 걸 고르면 끝.</strong><br>
+        시간이 촉박하면 속도 우선, 여유 있으면 비용 우선으로.
+      </p>
+    </div>
+
+    <!-- 기능 3 -->
+    <div class="ani d3" style="background: #fff; border-radius: 16px; padding: 26px; margin-bottom: 16px; box-shadow: 0 2px 16px rgba(31,58,95,0.07);">
+      <div class="feature-img">
+        <img src="images/feature3.png" alt="택시 자동 예약"
+          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'text-align:center; padding:16px;\'><span style=\'font-size:56px;\'>🚖</span><p style=\'margin:12px 0 0; font-size:13px; color:#8899bb;\'>여기에 택시 자동 예약 화면 이미지를 넣어주세요</p></div>';">
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <span style="background: #1F3A5F; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px;">03</span>
+        <h3 style="font-size: 17px; font-weight: 800; color: #1F3A5F; margin: 0;">택시 자동 예약</h3>
+      </div>
+      <p style="font-size: 14px; color: #555; line-height: 1.75; margin: 0;">
+        환승 지점에 도착하는 타이밍에 맞춰 <strong>택시가 자동으로 호출</strong>됩니다.<br>
+        기다림 없이 내리자마자 바로 탑승.
+      </p>
+    </div>
+
+    <!-- 기능 4 -->
+    <div class="ani" style="background: #fff; border-radius: 16px; padding: 26px; box-shadow: 0 2px 16px rgba(31,58,95,0.07);">
+      <div class="feature-img">
+        <img src="images/feature4.png" alt="막차 시간 연장"
+          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'text-align:center; padding:16px;\'><span style=\'font-size:56px;\'>🌙</span><p style=\'margin:12px 0 0; font-size:13px; color:#8899bb;\'>여기에 막차 시간 연장 화면 이미지를 넣어주세요</p></div>';">
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <span style="background: #4A90E2; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px;">04</span>
+        <h3 style="font-size: 17px; font-weight: 800; color: #4A90E2; margin: 0;">막차 시간이 더 늦어집니다</h3>
+      </div>
+      <p style="font-size: 14px; color: #555; line-height: 1.75; margin: 0 0 16px;">
+        택시로 다음 역까지 이동하면 막차를 더 늦게 탈 수 있습니다.<br>
+        자리에서 일어나야 하는 시간이 <strong>1시간 늘어납니다.</strong>
+      </p>
+      <div style="background: #EBF3FD; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 16px;">
+        <div style="text-align: center;">
+          <p style="font-size: 13px; color: #888; margin: 0 0 4px;">기존 막차</p>
+          <p style="font-size: 20px; font-weight: 800; color: #999; margin: 0; text-decoration: line-through;">새벽 1시</p>
+        </div>
+        <div style="font-size: 22px; color: #4A90E2;">→</div>
+        <div style="text-align: center;">
+          <p style="font-size: 13px; color: #4A90E2; font-weight: 700; margin: 0 0 4px;">BTX 이용 시</p>
+          <p style="font-size: 20px; font-weight: 800; color: #1F3A5F; margin: 0;">새벽 2시 🌙</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ④ CTA ── -->
+  <section id="cta" style="background: linear-gradient(160deg, #1F3A5F 0%, #142d4f 100%); padding: 56px 24px; text-align: center;">
+    <span class="taxi-icon" style="font-size: 52px; display: block; margin-bottom: 20px;">🚖</span>
+    <h2 class="ani" style="font-size: 22px; font-weight: 800; color: #fff; line-height: 1.55; margin: 0 0 12px;">
+      직접 경험해보세요
+    </h2>
+    <p class="ani d1" style="font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.7; margin: 0 0 32px;">
+      출발지와 목적지를 입력하면<br>최적 조합 경로를 바로 확인할 수 있습니다.
+    </p>
+    <a href="#" class="ani d2 pulse" style="display: block; background: #FF5B1B; color: #fff; font-size: 17px; font-weight: 700; padding: 20px 20px; border-radius: 14px; text-decoration: none; letter-spacing: -0.3px; margin-bottom: 14px;">
+      실제 서비스 예시 경험해보기 →
+    </a>
+    <p class="ani d3" style="font-size: 13px; color: rgba(255,255,255,0.4); margin: 0;">
+      지금 바로 경험해보세요 · 별도 설치 불필요
+    </p>
+  </section>
+
+  <!-- ── 하단 ── -->
+  <footer style="background: #142d4f; padding: 28px 24px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
+    <p style="font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.6); margin: 0 0 8px;">🚖 BTX</p>
+    <p style="font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.7; margin: 0;">
+      택시와 대중교통을 조합하는 스마트 이동 앱<br>
+      더 빠르게, 더 저렴하게, 더 편리하게.
+    </p>
+  </footer>
+
+</div><!-- /max-width wrapper -->
+
+<script>
+  // ── 히어로 등장 ──
+  window.addEventListener('load', function() {
+    document.getElementById('hero-section').classList.add('hero-loaded');
+    setTimeout(function() {
+      var b1 = document.getElementById('bar1');
+      var b2 = document.getElementById('bar2');
+      if (b1) b1.classList.add('filled');
+      if (b2) b2.classList.add('filled');
+    }, 900);
+  });
+
+  // ── 스크롤 등장 ──
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.ani, .ani-left').forEach(function(el) {
+    observer.observe(el);
+  });
+
+  // ── FAQ 아코디언 ──
+  document.querySelectorAll('.faq-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var ans = this.querySelector('.faq-answer');
+      var isOpen = this.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(function(i) {
+        i.classList.remove('open');
+        i.querySelector('.faq-answer').classList.remove('open');
+      });
+      if (!isOpen) {
+        this.classList.add('open');
+        ans.classList.add('open');
+      }
+    });
+  });
+</script>
+</body>
+</html>
