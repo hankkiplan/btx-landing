@@ -373,9 +373,21 @@
   </div>
 
   <div class="routes-list" id="routes-list"></div>
+
+  <!-- 사전 예약 알람 받기 고정 하단 바 -->
+  <div style="position:sticky; bottom:0; background:white; border-top:1px solid #EEF2F7; padding:14px 16px; z-index:98;">
+    <a href="preorder.html"
+       onclick="btx.track('click_preorder')"
+       style="display:block; background:#1F3A5F; color:white; text-align:center; padding:15px; border-radius:12px; font-size:15px; font-weight:700; text-decoration:none; letter-spacing:-0.3px;">
+      🔔 사전 출시 알림 받기
+    </a>
+  </div>
 </div>
 
+<script src="btx-analytics.js"></script>
 <script>
+btx.track('page_view_demo');
+
 /* ── Route data ── */
 const routes = [
   {
